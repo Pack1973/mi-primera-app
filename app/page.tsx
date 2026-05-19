@@ -1,50 +1,75 @@
 import { auth, signOut } from "@/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import RelojVivo from "@/components/RelojVivo";
+import BotonFichar from "@/components/BotonFichar";
+import ListaFichajesHoy from "@/components/ListaFichajesHoy";
+import { estaFichado } from "@/actions/fichajes";
 
 export default async function Home() {
   const session = await auth();
 
+  // Si no está logueado, redirige al login
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const dentro = await estaFichado();
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-500 to-purple-600">
-      <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-slate-800 mb-6 text-center">
-          App de Fichajes 🕐
-        </h1>
-
-        {session?.user ? (
-          <div className="text-center">
-            <p className="text-xl text-slate-700 mb-2">
-              ¡Hola, <strong>{session.user.name}</strong>! 👋
-            </p>
-            <p className="text-slate-500 mb-8">{session.user.email}</p>
-
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button
-                type="submit"
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-              >
-                Cerrar sesión
-              </button>
-            </form>
+    <main
+      className={`min-h-screen p-6 transition-colors ${
+        dentro
+          ? "bg-gradient-to-br from-emerald-600 to-teal-700"
+          : "bg-gradient-to-br from-slate-700 to-slate-900"
+      }`}
+    >
+      <div className="max-w-2xl mx-auto">
+        {/* Header con usuario y logout */}
+        <header className="flex items-center justify-between mb-8">
+          <div className="text-white">
+            <p className="text-sm opacity-80">Sesión iniciada como</p>
+            <p className="font-semibold">{session.user.name}</p>
           </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-slate-600 mb-6">
-              No has iniciado sesión todavía.
-            </p>
-            <Link
-              href="/login"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <button
+              type="submit"
+              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm transition-colors"
             >
-              Iniciar sesión
-            </Link>
-          </div>
-        )}
+              Cerrar sesión
+            </button>
+          </form>
+        </header>
+
+        {/* Estado y reloj */}
+        <div className="text-center mb-8">
+          <p className="text-white/80 text-xl mb-2">
+            {dentro ? "🟢 Estás trabajando" : "⚪ Estás fuera"}
+          </p>
+          <RelojVivo />
+          <p className="text-white/60 text-sm mt-2">
+            {new Date().toLocaleDateString("es-ES", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+
+        {/* Botón de fichar */}
+        <div className="flex justify-center mb-12">
+          <BotonFichar estaDentro={dentro} />
+        </div>
+
+        {/* Lista de fichajes de hoy */}
+        <ListaFichajesHoy />
       </div>
     </main>
   );
